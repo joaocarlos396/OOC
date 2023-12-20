@@ -9,15 +9,27 @@ import java.sql.SQLException;
 import java.util.Scanner;
 import java.util.Stack;
 
+/*
+*   This method handles the registration process for a new user. It prompts the user for
+ *   necessary information such as username, password, first name, and last name. It then constructs
+ *   an SQL query to insert the user data into the "users" table in the database with the account type set to 'REGULAR'.
+ *   The method uses a Scanner for user input and establishes a database connection to execute the SQL statement.
+ *   Password hashing is recommended but not implemented in this code.
+*/
 public class UserManager {
 
     private Scanner scanner;
+    //Constructor for UserManager class.
+    // Initializes the Scanner for user input.
 
     public UserManager() {
         this.scanner = new Scanner(System.in);
     }
+    //Method for registering a new user.
+    // Collects user input and inserts the data into the "users" table in the database.
 
     public void registerUser() {
+         // Collect user input for username, password, first name, and last name.
     System.out.println("Register New User");
     System.out.print("Enter username: ");
     String username = scanner.next();
@@ -30,77 +42,98 @@ public class UserManager {
 
     System.out.print("Enter last name: ");
     String lastName = scanner.next();
-
+    
+    // SQL query for user insertion.
     String sql = "INSERT INTO users (username, password, first_name, last_name, account_type) VALUES (?, ?, ?, ?, 'REGULAR')";
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        
+        // Set parameter values for the prepared statement.
         pstmt.setString(1, username);
         pstmt.setString(2, password); // Remember to hash the password
         pstmt.setString(3, firstName);
         pstmt.setString(4, lastName);
-
+        
+        // Execute the SQL statement and get the number of affected rows.
         int affectedRows = pstmt.executeUpdate();
-
+        // Display success or failure message based on affected rows.
         if (affectedRows > 0) {
             System.out.println("User registered successfully!");
         } else {
             System.out.println("User registration failed.");
         }
-    } catch (SQLException e) {
+        // Handle SQL exceptions and print an error message.
+    } catch (SQLException e) { 
         System.out.println("Error registering user: " + e.getMessage());
     }
 }
 
-
+/*
+ * Class: UserManager
+ * 
+ * Method: loginUser()
+ * Description:
+ *   This method handles the user login process. It prompts the user for their username and password,
+ *   constructs an SQL query to check if the credentials are valid in the "users" table, and performs
+ *   appropriate actions based on the login result. The method uses a Scanner for user input and establishes
+ *   a database connection to execute the SQL statement.
+ */
+    
     public LoginInfo loginUser() {
     System.out.println("Login");
+    
+    // Collect user input for username and password.
     System.out.print("Enter username: ");
     String username = scanner.next();
 
     System.out.print("Enter password: ");
     String password = scanner.next(); 
-
+    // SQL query to check if the username and password are valid.
     String sql = "SELECT user_id, account_type FROM users WHERE username = ? AND password = ?";
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        // Set parameter values for the prepared statement.
         pstmt.setString(1, username);
         pstmt.setString(2, password);
-
+        // Execute the SQL statement and get the result set.
         ResultSet rs = pstmt.executeQuery();
-
+        // Check if the login is successful.
         if (rs.next()) {
+            // Print success message based on account type (admin or regular user).
             if(rs.getString("account_type").equals("ADMIN"))
                 System.out.println("Login successful as an admin!");
             else
                 System.out.println("Login successful as a regular user!");
+            // Retrieve user ID and account type from the result set.
             String accountType=rs.getString("account_type");
            
             int userId=rs.getInt("user_id");
+            // Create a LoginInfo object with user details and return it.
             LoginInfo loginInfo = new LoginInfo(userId, accountType);
             return loginInfo;
         } else {
+            // Print error message if login fails and return null.
             System.out.println("Login failed. Invalid username or password.");
             return null;
         }
     } catch (SQLException e) {
+        // Handle SQL exceptions and print an error message.
         System.out.println("Error logging in: " + e.getMessage());
         return null;
     }
 }
 
-
-
-
-
-
-   
+   /*
+    * This method handles the update of a user's profile. It prompts the user for new profile information,
+    * constructs an SQL query to update the corresponding record in the "users" table, and executes the update
+    * operation. The method uses a Scanner for user input and establishes a database connection to perform the update.
+    */
 
     public void updateUserProfile(int userId) {
     System.out.println("Update User Profile");
+    // Collect user input for new first name, last name, username, and password.
     System.out.print("Enter new first name: ");
     String firstName = scanner.next();
 
@@ -112,66 +145,87 @@ public class UserManager {
 
     System.out.print("Enter new password: ");
     String password = scanner.next();
-
+    // SQL query to update the user's profile in the "users" table.
     String sql = "UPDATE users SET first_name = ?, last_name = ?, username = ?, password = ? WHERE user_id = ?";
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        // Set parameter values for the prepared statement.
         pstmt.setString(1, firstName);
         pstmt.setString(2, lastName);
         pstmt.setString(3, username);
         pstmt.setString(4, password);
         pstmt.setInt(5, userId);
-
+        
+        // Execute the SQL statement and get the number of affected rows.
         int affectedRows = pstmt.executeUpdate();
-
+        // Check if the update is successful and print the corresponding message.
         if (affectedRows > 0) {
             System.out.println("User profile updated successfully!");
         } else {
             System.out.println("User profile update failed.");
         }
     } catch (SQLException e) {
+         // Handle SQL exceptions and print an error message.
         System.out.println("Error updating user profile: " + e.getMessage());
     }
 }
-
+   /*
+    *   This method retrieves and displays information about all users from the "users" table in the database.
+    *   It constructs an SQL query to select user details, establishes a database connection, executes the query,
+    *   and prints the retrieved user information. The method uses a PreparedStatement for the SQL query and handles
+    *   SQLExceptions to display an error message in case of an issue during the retrieval process.
+    */
 
     public void viewAllUsers() {
     System.out.println("Viewing all users");
+    // SQL query to select user details from the "users" table.
     String sql = "SELECT user_id, username, first_name, last_name, account_type FROM users";
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        
+       // Execute the SQL statement and get the ResultSet containing user information.
         ResultSet rs = pstmt.executeQuery();
-
+        
+         // Iterate through the ResultSet to print user details.
         while (rs.next()) {
             System.out.println("ID: " + rs.getInt("user_id") + ", Username: " + rs.getString("username") +
                                ", Name: " + rs.getString("first_name") + " " + rs.getString("last_name") +
                                ", Type: " + rs.getString("account_type"));
         }
     } catch (SQLException e) {
+        // Handle SQL exceptions and print an error message.
         System.out.println("Error retrieving users: " + e.getMessage());
     }
 }
 
-
+   /*
+    *   This method allows the removal of a user from the system. It prompts the user to enter the ID of the user to be removed,
+    *   performs several database operations in a transaction, including deleting related records from the "equations" and "tax_records"
+    *   tables, and finally removes the user from the "users" table. The method uses PreparedStatement for each SQL operation,
+    *   handles SQLExceptions, and ensures transactional integrity by using commit and rollback.
+    */
+    
     public void removeUser() {
     System.out.println("Remove a User");
     System.out.print("Enter user ID to remove: ");
     
     int userId = scanner.nextInt();  // assuming 'scanner' is already defined in the class
+    // Check if the specified user ID is the admin's ID; if true, display a message that the admin cannot be deleted.
     if(userId==1)
     {
         System.out.println("The admin cannot be deleted.");
         return;
     }
+    // SQL statements for deleting records related to the user from the "equations" and "tax_records" tables.
     String deleteEquationsSql = "DELETE FROM equations WHERE user_id = ?";
     String deleteTaxRecordsSql = "DELETE FROM tax_records WHERE user_id = ?";
+     // SQL statement for removing the user from the "users" table.
     String deleteUserSql = "DELETE FROM users WHERE user_id = ?";
 
     Connection conn = null;
+    // Establish a database connection and start a transaction.
     try {
         conn = DatabaseConnection.getConnection();
         conn.setAutoCommit(false); // Start transaction
@@ -207,6 +261,7 @@ public class UserManager {
             try {
                 conn.rollback(); // Rollback transaction in case of exception
             } catch (SQLException ex) {
+                
                 System.out.println("Error during rollback: " + ex.getMessage());
             }
         }
@@ -222,24 +277,30 @@ public class UserManager {
     }
 }
 
-
+       /*
+        *   This method allows the calculation and storage of tax information for a user. It prompts the user to enter gross income
+        *   and tax credits, calculates the tax owed using a helper method, and then checks if a tax record already exists for the user.
+        *   If a record exists, it updates the existing record; otherwise, it inserts a new record into the "tax_records" table.
+        *   The method utilizes PreparedStatements for SQL operations, handles SQLExceptions, and provides appropriate feedback messages. 
+        */ 
+    
    public void calculateAndStoreTax(int userId) {
     System.out.println("Calculate and Store Tax");
-
+     // Prompt the user to enter gross income and tax credits.
     System.out.print("Enter gross income: ");
     double grossIncome = scanner.nextDouble();
 
     System.out.print("Enter tax credits: ");
     double taxCredits = scanner.nextDouble();
-
+     // Calculate the tax owed using a helper method.
     double taxOwed = calculateTaxOwed(grossIncome, taxCredits);
 
-
+     // SQL statements for checking, updating, and inserting tax records in the "tax_records" table.
     String checkSql = "SELECT record_id FROM tax_records WHERE user_id = ?";
     String updateSql = "UPDATE tax_records SET gross_income = ?, tax_credits = ?, tax_owed = ? WHERE user_id = ?";
     String insertSql = "INSERT INTO tax_records (user_id, gross_income, tax_credits, tax_owed) VALUES (?, ?, ?, ?)";
 
-    try (Connection conn = DatabaseConnection.getConnection();
+    try (Connection conn = DatabaseConnection.getConnection(); // Establish a database connection.
          PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
 
         checkStmt.setInt(1, userId);
@@ -247,6 +308,7 @@ public class UserManager {
 
         if (rs.next()) {
             // Record exists, so update
+            // Execute the check SQL statement to see if a tax record already exists for the user.
             try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
                 updateStmt.setDouble(1, grossIncome);
                 updateStmt.setDouble(2, taxCredits);
@@ -257,7 +319,7 @@ public class UserManager {
             }
         } else {
             // Record does not exist, so insert
-            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) { 
                 insertStmt.setInt(1, userId);
                 insertStmt.setDouble(2, grossIncome);
                 insertStmt.setDouble(3, taxCredits);
@@ -271,35 +333,44 @@ public class UserManager {
     }
 }
 
-
+  /*
+   *   This method allows the solving and storage of an equation involving gross income (x) and tax credits (y).
+   *   It retrieves the user's gross income and tax credits from the "tax_records" table, uses the obtained values in the equation,
+   *   and then stores the result in the "equations" table. The method utilizes a SQL SELECT statement to retrieve data,
+   *   PreparedStatements for SQL operations, handles SQLExceptions, and provides appropriate feedback messages. 
+   */
 
     public void solveAndStoreEquation(int userId) {
     System.out.println("Solve and Store Equation (x for gross_income and y for tax_credits) ");
     //System.out.print("Enter user ID: ");
    // int userId = scanner.nextInt();
    
-   double x = 0,y = 0;
+   double x = 0,y = 0; // Variables to store the user's gross income (x) and tax credits (y).
+   // SQL SELECT statement to retrieve gross income and tax credits for the given user.
       String sql1 = "SELECT gross_income, tax_credits FROM tax_records WHERE user_id = ?";
+      
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt1 = conn.prepareStatement(sql1)) {
 
         pstmt1.setInt(1, userId );
       
-
+        // Execute the SQL SELECT statement.
         ResultSet rs1 = pstmt1.executeQuery();
 
         if (rs1.next()) {
-            
+             // Retrieve gross income and tax credits values from the ResultSet.
             x=rs1.getDouble("gross_income");
             y=rs1.getDouble("tax_credits");
+            // Use the obtained values in the equation.
             //System.out.println(y);
 
         } else {
-            System.out.println("Failed to read.");
+            System.out.println("Failed to read."); // Display an error message if the retrieval fails
             //return null;
         }
     } catch (SQLException e) {
+        // Handle SQLExceptions and display appropriate error messages.
         System.out.println("Could not connect the database");
         //return null;
     }
